@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Browse and download public data archives from the Sustainable FSA project — USDA Farm Service Agency program data, standardized and analysis-ready.">
+<title>Data Portal · Sustainable FSA</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23faf7f2'/%3E%3Ccircle cx='64' cy='38' r='14' fill='%23D9A441'/%3E%3Cpath d='M2 62 C 20 56, 38 60, 50 63 C 66 67, 82 61, 98 58 L 98 98 L 2 98 Z' fill='%236B8E5A'/%3E%3Cpath d='M2 76 C 22 70, 40 74, 56 78 C 72 82, 86 77, 98 74 L 98 98 L 2 98 Z' fill='%2352704a'/%3E%3Ccircle cx='50' cy='50' r='47' fill='none' stroke='%238f320a' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;900&display=swap" rel="stylesheet">
+<style>
+/* Design tokens mirror sustainable-fsa.github.io (Tailwind build) */
+:root{
+  --cream:#faf7f2;
+  --white:#ffffff;
+  --gray-100:#f3f4f6;
+  --gray-200:#e5e7eb;
+  --gray-400:#9ca3af;
+  --gray-500:#6b7280;
+  --gray-600:#4b5563;
+  --gray-700:#374151;
+  --gray-800:#1f2937;
+  --terracotta:#b7410e;
+  --terracotta-dark:#8f320a;
+  --ochre-dark:#8a6620;
+  --sage:#6B8E5A;
+  --sage-dark:#52704a;
+  --shadow-sm:0 1px 2px 0 rgb(0 0 0/.05);
+  --shadow-md:0 4px 6px -1px rgb(0 0 0/.1),0 2px 4px -2px rgb(0 0 0/.1);
+  --sans:'Roboto',ui-sans-serif,system-ui,sans-serif,'Apple Color Emoji','Segoe UI Emoji';
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--cream);
+  color:var(--gray-800);
+  font-family:var(--sans);
+  font-size:15px;line-height:1.6;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+a{color:var(--terracotta-dark)}
+:focus-visible{outline:2px solid var(--terracotta);outline-offset:2px;border-radius:4px}
+.wrap{max-width:80rem;margin:0 auto;padding:0 1rem;width:100%}
+
+/* ---------- header (echoes _includes/header.html) ---------- */
+header.site{
+  position:sticky;top:0;z-index:30;
+  background:var(--white);
+  border-bottom:1px solid var(--gray-200);
+  box-shadow:var(--shadow-sm);
+}
+header.site .bar{
+  max-width:80rem;margin:0 auto;padding:.125rem 1rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+}
+header.site img.banner{display:block;height:3rem;width:auto;object-fit:contain}
+@media(min-width:640px){header.site img.banner{height:3.5rem}}
+@media(min-width:1024px){header.site img.banner{height:4rem}}
+header.site nav{display:flex;align-items:center;gap:.25rem;flex-wrap:wrap}
+header.site nav a{
+  padding:.5rem .75rem;border-radius:.5rem;
+  font-size:.875rem;font-weight:500;text-decoration:none;
+  color:var(--gray-700);transition:background-color .15s;
+}
+header.site nav a:hover{background:var(--gray-100)}
+header.site nav a[aria-current="page"]{background:var(--terracotta);color:var(--white)}
+@media(max-width:767px){header.site nav a.lo{display:none}}
+
+/* ---------- main ---------- */
+main{flex:1}
+main .wrap{padding-top:2rem;padding-bottom:3rem}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ochre-dark);
+}
+h1.hero{
+  font-size:1.875rem;font-weight:900;line-height:1.15;color:var(--gray-800);
+  margin:.35rem 0 .75rem;
+}
+@media(min-width:640px){h1.hero{font-size:2.25rem}}
+.lede{color:var(--gray-600);max-width:48em;margin-bottom:1.75rem}
+
+/* ---------- breadcrumbs ---------- */
+.crumbs{
+  font-family:var(--mono);font-size:13px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:2px;
+  padding:.65rem .9rem;background:var(--white);
+  border:1px solid var(--gray-200);border-radius:.75rem;box-shadow:var(--shadow-sm);
+}
+.crumbs a{text-decoration:none;padding:1px 4px;border-radius:4px;color:var(--terracotta-dark)}
+.crumbs a:hover{background:var(--gray-100)}
+.crumbs .sep{color:var(--gray-400)}
+.crumbs .here{color:var(--gray-800);padding:1px 4px}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;gap:.75rem;align-items:center;margin:1.1rem 0 .7rem;flex-wrap:wrap}
+.toolbar input[type=search]{
+  font-family:var(--mono);font-size:13px;color:var(--gray-800);
+  background:var(--white);border:1px solid var(--gray-200);border-radius:.5rem;
+  padding:.5rem .8rem;width:280px;max-width:100%;
+}
+.toolbar input[type=search]::placeholder{color:var(--gray-500)}
+.toolbar .stats{color:var(--gray-500);font-size:13px;margin-left:auto}
+
+/* ---------- ledger table (in a site-style card) ---------- */
+.ledger-wrap{
+  overflow-x:auto;background:var(--white);
+  border:1px solid var(--gray-200);border-radius:.75rem;box-shadow:var(--shadow-sm);
+}
+.ledger{width:100%;border-collapse:collapse}
+.ledger th{
+  text-align:left;font-size:11px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ochre-dark);
+  padding:.7rem .9rem;border-bottom:1px solid var(--gray-200);
+  cursor:pointer;user-select:none;white-space:nowrap;background:var(--cream);
+}
+.ledger th .arr{color:var(--terracotta)}
+.ledger td{
+  padding:.55rem .9rem;border-bottom:1px solid var(--gray-100);
+  font-family:var(--mono);font-size:13px;vertical-align:middle;
+}
+.ledger tr:last-child td{border-bottom:none}
+.ledger tbody tr:hover td{background:var(--gray-100)}
+.ledger td.num{text-align:right;white-space:nowrap;color:var(--gray-500)}
+.ledger td.date{white-space:nowrap;color:var(--gray-500)}
+.ledger a.entry{color:var(--gray-800);text-decoration:none;display:inline-flex;align-items:center;gap:9px}
+.ledger a.entry:hover{color:var(--terracotta-dark)}
+.ledger a.entry:hover .nm{text-decoration:underline;text-underline-offset:3px}
+.ledger .ico{flex:none;width:15px;height:15px}
+.ledger td.act{text-align:right;white-space:nowrap;width:1%}
+button.copy{
+  font-family:var(--sans);font-size:12px;font-weight:500;color:var(--terracotta-dark);
+  background:var(--white);border:1px solid var(--gray-200);border-radius:.5rem;
+  padding:.2rem .65rem;cursor:pointer;transition:all .15s;
+}
+button.copy:hover{border-color:var(--terracotta);background:#fdf3ec}
+button.copy.done{color:var(--sage-dark);border-color:var(--sage);background:#f2f6ee}
+
+.note{color:var(--gray-500);font-size:13px;margin:.9rem 2px}
+.state{
+  padding:2.4rem 1.2rem;text-align:center;color:var(--gray-500);
+  background:var(--white);border:1px dashed var(--gray-200);border-radius:.75rem;
+}
+.state button{margin-top:.7rem}
+
+/* ---------- footer (echoes _includes/footer.html) ---------- */
+footer.site{background:var(--white);border-top:1px solid var(--gray-200);margin-top:auto}
+footer.site .inner{max-width:80rem;margin:0 auto;padding:2.5rem 1rem;text-align:center}
+footer.site p{font-size:.875rem;color:var(--gray-700);max-width:48rem;margin:0 auto;line-height:1.65}
+footer.site p+p{margin-top:.75rem;color:var(--gray-600)}
+footer.site a{font-weight:600;color:var(--terracotta-dark);text-decoration:none}
+footer.site a:hover{text-decoration:underline}
+footer.site p a.quiet{font-weight:400;color:inherit}
+footer.site p a.quiet:hover{color:var(--terracotta-dark)}
+footer.site .logos{display:flex;justify-content:center;align-items:center;gap:2rem;flex-wrap:wrap;margin-top:1.5rem}
+footer.site .logos img{height:3rem;width:auto}
+@media(min-width:640px){footer.site .logos img{height:3.5rem}}
+footer.site .src{font-size:.75rem;color:var(--gray-500);margin-top:1.5rem}
+footer.site .src a{font-weight:400;color:inherit;text-decoration:underline}
+footer.site .src a:hover{color:var(--gray-700)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+}
+@media (max-width:640px){
+  .ledger td.date,.ledger th.date{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <a href="https://sustainable-fsa.com/" aria-label="Sustainable FSA — home">
+      <img class="banner" src="/sustainable-fsa-banner.svg" alt="Sustainable FSA"
+           width="1225" height="350">
+    </a>
+    <nav aria-label="Main navigation">
+      <a class="lo" href="https://sustainable-fsa.com/">Home</a>
+      <a class="lo" href="https://sustainable-fsa.com/about/">About</a>
+      <a href="#/" aria-current="page">Data</a>
+      <a class="lo" href="https://sustainable-fsa.com/analysis/">Analysis</a>
+      <a class="lo" href="https://sustainable-fsa.com/documents/">Documents</a>
+      <a class="lo" href="https://sustainable-fsa.com/team/">Team</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap" id="app" aria-live="polite"></div>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <p>
+      This portal is part of the
+      <a href="https://www.ars.usda.gov/research/project/?accnNo=444612" target="_blank" rel="noopener noreferrer">Enhancing Sustainable Disaster Relief in FSA Programs</a>
+      project.
+    </p>
+    <p>
+      Supported by the
+      <a class="quiet" href="https://www.usda.gov/about-usda/general-information/staff-offices/office-chief-economist/office-energy-and-environmental-policy" target="_blank" rel="noopener noreferrer">USDA Office of the Chief Economist, Office of Energy and Environmental Policy</a>
+      and the
+      <a class="quiet" href="https://www.climatehubs.usda.gov" target="_blank" rel="noopener noreferrer">USDA Climate Hubs</a>.
+      Data and analyses prepared by the
+      <a class="quiet" href="https://climate.umt.edu" target="_blank" rel="noopener noreferrer">Montana Climate Office</a>
+      at the
+      <a class="quiet" href="https://www.umt.edu/forestry/" target="_blank" rel="noopener noreferrer">W.A. Franke College of Forestry &amp; Conservation</a>,
+      University of Montana. Raw USDA data are public domain; processed data are released CC0.
+    </p>
+    <div class="logos">
+      <a href="https://climate.umt.edu" target="_blank" rel="noopener noreferrer" aria-label="Montana Climate Office">
+        <img src="/MCO_logo.svg" alt="Montana Climate Office" width="432" height="159">
+      </a>
+    </div>
+    <p class="src">
+      Portal code on
+      <a href="https://github.com/sustainable-fsa" target="_blank" rel="noopener noreferrer">GitHub</a> ·
+      <a href="mailto:kyle.bocinsky@umontana.edu">kyle.bocinsky@umontana.edu</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ *  Configuration                                                      *
+ * ------------------------------------------------------------------ */
+const S3 = "https://sustainable-fsa.s3.us-west-2.amazonaws.com";
+
+/* Objects at the bucket root that belong to the portal, not the data. */
+const PORTAL_FILES = new Set([
+  "index.html", "favicon.ico", "sustainable-fsa-banner.svg", "MCO_logo.svg",
+]);
+
+/* ------------------------------------------------------------------ *
+ *  Key encoding                                                       *
+ *  S3 keys here contain literal spaces and literal "%" (Arrow's hive  *
+ *  value encoding). "=" and "/" stay literal so partition paths stay  *
+ *  readable and hive-parseable.                                       *
+ * ------------------------------------------------------------------ */
+function encodeKey(key){
+  return key
+    .replaceAll("%", "%25")   // first: escape literal percents
+    .replaceAll(" ", "%20")
+    .replaceAll("#", "%23")
+    .replaceAll("?", "%3F")
+    .replaceAll("+", "%2B");
+}
+function decodeSafe(s){
+  try { return decodeURIComponent(s.replaceAll("+", "%2B")); }
+  catch { return s; }
+}
+function esc(s){
+  return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;");
+}
+
+/* ------------------------------------------------------------------ *
+ *  S3 listing (public ListObjectsV2, XML)                             *
+ * ------------------------------------------------------------------ */
+async function listPrefix(prefix){
+  const dirs = [], files = [];
+  let token = null;
+  for (let page = 0; page < 20; page++){
+    const q = new URLSearchParams({ "list-type": "2", "delimiter": "/", "prefix": prefix });
+    if (token) q.set("continuation-token", token);
+    const res = await fetch(`${S3}/?${q}`);
+    if (!res.ok) throw new Error(`S3 listing failed (HTTP ${res.status})`);
+    const xml = new DOMParser().parseFromString(await res.text(), "text/xml");
+    for (const el of xml.querySelectorAll("CommonPrefixes > Prefix"))
+      dirs.push(el.textContent);
+    for (const el of xml.querySelectorAll("Contents")){
+      const key = el.querySelector("Key")?.textContent ?? "";
+      if (key === prefix) continue;                    // the prefix placeholder itself
+      files.push({
+        key,
+        size: Number(el.querySelector("Size")?.textContent ?? 0),
+        modified: el.querySelector("LastModified")?.textContent ?? "",
+      });
+    }
+    const truncated = xml.querySelector("IsTruncated")?.textContent === "true";
+    token = xml.querySelector("NextContinuationToken")?.textContent ?? null;
+    if (!truncated || !token) return { dirs, files, truncated: false };
+  }
+  return { dirs, files, truncated: true };
+}
+
+/* ------------------------------------------------------------------ *
+ *  Formatting                                                         *
+ * ------------------------------------------------------------------ */
+function humanSize(n){
+  if (n === 0) return "0 B";
+  const u = ["B","KB","MB","GB","TB"];
+  const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+  const v = n / 1024 ** i;
+  return `${v >= 100 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
+}
+function humanDate(iso){
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
+const FOLDER_ICO = `<svg class="ico" viewBox="0 0 16 16" fill="#8a6620" aria-hidden="true"><path d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.2c.4 0 .8.17 1.06.47L8.5 4H13a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-8Z"/></svg>`;
+const FILE_ICO   = `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="#6B8E5A" stroke-width="1.4" aria-hidden="true"><path d="M4 1.75h5.2L12.5 5v9.25h-8.5V1.75Z"/><path d="M9 1.75V5h3.5"/></svg>`;
+
+/* ------------------------------------------------------------------ *
+ *  Views                                                              *
+ * ------------------------------------------------------------------ */
+const app = document.getElementById("app");
+
+function crumbsHtml(prefix){
+  const parts = prefix.split("/").filter(Boolean);
+  let html = `<a href="#/">sustainable-fsa</a>`;
+  let acc = "";
+  parts.forEach((p, i) => {
+    acc += p + "/";
+    const label = esc(decodeSafe(p));
+    html += `<span class="sep">/</span>`;
+    html += (i === parts.length - 1)
+      ? `<span class="here">${label}</span>`
+      : `<a href="#/${esc(encodeKey(acc))}">${label}</a>`;
+  });
+  return `<nav class="crumbs" aria-label="Location">${html}</nav>`;
+}
+
+/* Shown above the explorer at the bucket root only. */
+function ledeHtml(prefix){
+  if (prefix !== "") return "";
+  return `<span class="eyebrow">Sustainable FSA</span>
+    <h1 class="hero">Data Portal</h1>
+    <p class="lede">Raw file access to the project's data archives. For dataset
+    descriptions and documentation, see the
+    <a href="https://sustainable-fsa.com/data/">data catalog</a>.</p>`;
+}
+
+let currentSort = { by: "name", dir: 1 };
+
+async function renderPrefix(prefix){
+  app.innerHTML = ledeHtml(prefix) + crumbsHtml(prefix) + `<div class="state" style="margin-top:18px">Reading ${esc(decodeSafe(prefix || "the archive"))}…</div>`;
+  try {
+    const { dirs, files, truncated } = await listPrefix(prefix);
+    const shownFiles = prefix === "" ? files.filter(f => !PORTAL_FILES.has(f.key)) : files;
+    const totalSize = shownFiles.reduce((a, f) => a + f.size, 0);
+    const stats = [
+      dirs.length ? `${dirs.length} folder${dirs.length === 1 ? "" : "s"}` : "",
+      shownFiles.length ? `${shownFiles.length} file${shownFiles.length === 1 ? "" : "s"}` : "",
+      totalSize ? humanSize(totalSize) : "",
+    ].filter(Boolean).join(" · ");
+
+    app.innerHTML = `
+      ${ledeHtml(prefix)}
+      ${crumbsHtml(prefix)}
+      <div class="toolbar">
+        <input type="search" id="filter" placeholder="Filter this folder…" aria-label="Filter entries in this folder">
+        <span class="stats">${esc(stats || "empty")}</span>
+      </div>
+      <div class="ledger-wrap">
+      <table class="ledger">
+        <thead><tr>
+          <th data-sort="name">Name <span class="arr"></span></th>
+          <th data-sort="size" style="text-align:right">Size <span class="arr"></span></th>
+          <th data-sort="date" class="date">Modified <span class="arr"></span></th>
+          <th aria-label="Actions"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      </div>
+      ${truncated ? `<p class="note">This folder is very large — showing the first 20,000 entries.</p>` : ""}
+      ${dirs.length + shownFiles.length === 0 ? `<div class="state" style="margin-top:14px">Nothing under this prefix yet.</div>` : ""}`;
+
+    const entries = [
+      ...dirs.map(p => ({ type: "dir", key: p, name: p.slice(prefix.length).replace(/\/$/, ""), size: -1, modified: "" })),
+      ...shownFiles.map(f => ({ type: "file", key: f.key, name: f.key.slice(prefix.length), size: f.size, modified: f.modified })),
+    ];
+
+    const tbody = document.getElementById("rows");
+    const drawRows = () => {
+      const q = document.getElementById("filter").value.trim().toLowerCase();
+      const view = entries
+        .filter(e => !q || decodeSafe(e.name).toLowerCase().includes(q))
+        .sort((a, b) => {
+          if (a.type !== b.type) return a.type === "dir" ? -1 : 1;   // folders first, always
+          const { by, dir } = currentSort;
+          if (by === "size") return (a.size - b.size) * dir;
+          if (by === "date") return a.modified.localeCompare(b.modified) * dir;
+          return decodeSafe(a.name).localeCompare(decodeSafe(b.name), undefined, { numeric: true }) * dir;
+        });
+      tbody.innerHTML = view.map(e => {
+        const label = esc(decodeSafe(e.name));
+        if (e.type === "dir"){
+          return `<tr>
+            <td><a class="entry" href="#/${esc(encodeKey(e.key))}">${FOLDER_ICO}<span class="nm">${label}</span></a></td>
+            <td class="num">—</td><td class="date"></td>
+            <td class="act"><button class="copy" data-copy-key="${esc(e.key)}">Copy URL</button></td>
+          </tr>`;
+        }
+        return `<tr>
+          <td><a class="entry" href="/${esc(encodeKey(e.key))}" download>${FILE_ICO}<span class="nm">${label}</span></a></td>
+          <td class="num">${humanSize(e.size)}</td>
+          <td class="date">${humanDate(e.modified)}</td>
+          <td class="act"><button class="copy" data-copy-key="${esc(e.key)}">Copy URL</button></td>
+        </tr>`;
+      }).join("");
+      wireCopyButtons();
+    };
+
+    drawRows();
+    document.getElementById("filter").addEventListener("input", drawRows);
+    app.querySelectorAll("th[data-sort]").forEach(th => {
+      th.addEventListener("click", () => {
+        const by = th.dataset.sort;
+        currentSort = { by, dir: currentSort.by === by ? -currentSort.dir : 1 };
+        app.querySelectorAll("th .arr").forEach(a => a.textContent = "");
+        th.querySelector(".arr").textContent = currentSort.dir === 1 ? "▲" : "▼";
+        drawRows();
+      });
+    });
+  } catch (err) {
+    renderError(err, () => renderPrefix(prefix));
+  }
+}
+
+function renderError(err, retry){
+  app.innerHTML = crumbsHtml("") + `
+    <div class="state" style="margin-top:18px">
+      Couldn't reach the archive — ${esc(err.message)}.<br>
+      Check your connection, then try again.<br>
+      <button class="copy" id="retry">Retry</button>
+    </div>`;
+  document.getElementById("retry").addEventListener("click", retry);
+}
+
+function wireCopyButtons(){
+  app.querySelectorAll("button.copy").forEach(btn => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", async () => {
+      const text = `${location.origin}/${encodeKey(btn.dataset.copyKey)}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        const was = btn.textContent;
+        btn.textContent = "Copied";
+        btn.classList.add("done");
+        setTimeout(() => { btn.textContent = was; btn.classList.remove("done"); }, 1400);
+      } catch { prompt("Copy this URL:", text); }
+    });
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ *  Hash routing: #/  or  #/<encoded prefix ending in "/">             *
+ * ------------------------------------------------------------------ */
+function route(){
+  const raw = location.hash.replace(/^#\/?/, "");
+  const prefix = decodeSafe(raw);
+  renderPrefix(!prefix || prefix.endsWith("/") ? prefix : prefix + "/");
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
