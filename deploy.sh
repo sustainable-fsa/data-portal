@@ -25,7 +25,16 @@ aws s3 cp assets/sustainable-fsa-banner.svg "$BUCKET/sustainable-fsa-banner.svg"
 aws s3 cp assets/MCO_logo.svg "$BUCKET/MCO_logo.svg" \
   --content-type "image/svg+xml" --cache-control "max-age=86400"
 
+# Favicons (same set as sustainable-fsa.com), served from the bucket root
+aws s3 cp assets/favicon.ico "$BUCKET/favicon.ico" \
+  --content-type "image/x-icon" --cache-control "max-age=86400"
+for png in favicon-16x16 favicon-32x32 favicon-48x48 apple-touch-icon; do
+  aws s3 cp "assets/$png.png" "$BUCKET/$png.png" \
+    --content-type "image/png" --cache-control "max-age=86400"
+done
+
 aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" \
-  --paths "/index.html" "/" --query "Invalidation.{Id:Id,Status:Status}" --output table
+  --paths "/index.html" "/" "/favicon.ico" "/apple-touch-icon.png" "/favicon-16x16.png" "/favicon-32x32.png" "/favicon-48x48.png" \
+  --query "Invalidation.{Id:Id,Status:Status}" --output table
 
 echo "Deployed. https://data.sustainable-fsa.com/"

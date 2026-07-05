@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Browse and download public data archives from the Sustainable FSA project — USDA Farm Service Agency program data, standardized and analysis-ready.">
 <title>Data Portal · Sustainable FSA</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23faf7f2'/%3E%3Ccircle cx='64' cy='38' r='14' fill='%23D9A441'/%3E%3Cpath d='M2 62 C 20 56, 38 60, 50 63 C 66 67, 82 61, 98 58 L 98 98 L 2 98 Z' fill='%236B8E5A'/%3E%3Cpath d='M2 76 C 22 70, 40 74, 56 78 C 72 82, 86 77, 98 74 L 98 98 L 2 98 Z' fill='%2352704a'/%3E%3Ccircle cx='50' cy='50' r='47' fill='none' stroke='%238f320a' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;900&display=swap" rel="stylesheet">
@@ -233,7 +237,9 @@ const S3 = "https://sustainable-fsa.s3.us-west-2.amazonaws.com";
 
 /* Objects at the bucket root that belong to the portal, not the data. */
 const PORTAL_FILES = new Set([
-  "index.html", "favicon.ico", "sustainable-fsa-banner.svg", "MCO_logo.svg",
+  "index.html", "favicon.ico", "favicon-16x16.png", "favicon-32x32.png",
+  "favicon-48x48.png", "apple-touch-icon.png",
+  "sustainable-fsa-banner.svg", "MCO_logo.svg",
 ]);
 
 /* ------------------------------------------------------------------ *
