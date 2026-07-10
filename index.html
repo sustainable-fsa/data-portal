@@ -36,6 +36,30 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+.preview-overlay{
+  position:fixed;inset:0;background:rgb(0 0 0/.45);z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:4vh 4vw;
+}
+.preview-panel{
+  background:var(--white);border-radius:8px;box-shadow:var(--shadow-md);
+  width:min(960px,100%);max-height:88vh;display:flex;flex-direction:column;
+}
+.preview-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;border-bottom:1px solid var(--gray-200);
+}
+.preview-name{font-weight:600;overflow-wrap:anywhere}
+.preview-links{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.preview-links a{text-decoration:none}
+.preview-body{
+  font-family:var(--mono);font-size:12.5px;line-height:1.5;
+  overflow:auto;padding:14px;white-space:pre;flex:1;background:var(--gray-100);
+}
+.preview-note{
+  padding:8px 14px;border-top:1px solid var(--gray-200);
+  color:var(--gray-500);font-size:13px;
+}
+.preview-note:empty{display:none}
 html{-webkit-text-size-adjust:100%}
 body{
   background:var(--cream);
@@ -312,6 +336,16 @@ function humanDate(iso){
 const FOLDER_ICO = `<svg class="ico" viewBox="0 0 16 16" fill="#8a6620" aria-hidden="true"><path d="M1.5 3.5A1.5 1.5 0 0 1 3 2h3.2c.4 0 .8.17 1.06.47L8.5 4H13a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 13 13H3a1.5 1.5 0 0 1-1.5-1.5v-8Z"/></svg>`;
 const FILE_ICO   = `<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="#6B8E5A" stroke-width="1.4" aria-hidden="true"><path d="M4 1.75h5.2L12.5 5v9.25h-8.5V1.75Z"/><path d="M9 1.75V5h3.5"/></svg>`;
 
+/* Browser-viewable files open instead of downloading: formats browsers
+ * render natively navigate in a new tab; text formats (which many
+ * browsers download — notably text/csv) open in an in-app preview. */
+const VIEW_NATIVE = new Set(["pdf","png","jpg","jpeg","gif","svg","webp","mp4","webm","html"]);
+const VIEW_TEXT   = new Set(["txt","csv","tsv","json","geojson","topojson","xml","md","yml","yaml","log","cff","bib"]);
+function extOf(name){
+  const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
+  return m ? m[1] : "";
+}
+
 /* ------------------------------------------------------------------ *
  *  Views                                                              *
  * ------------------------------------------------------------------ */
@@ -403,8 +437,14 @@ async function renderPrefix(prefix){
             <td class="act"><button class="copy" data-copy-key="${esc(e.key)}">Copy URL</button></td>
           </tr>`;
         }
+        const ext = extOf(e.name);
+        const attrs = VIEW_TEXT.has(ext)
+          ? `data-view-key="${esc(e.key)}" data-view-size="${e.size}"`
+          : VIEW_NATIVE.has(ext)
+            ? `target="_blank" rel="noopener"`
+            : `download`;
         return `<tr>
-          <td><a class="entry" href="/${esc(encodeKey(e.key))}" download>${FILE_ICO}<span class="nm">${label}</span></a></td>
+          <td><a class="entry" href="/${esc(encodeKey(e.key))}" ${attrs}>${FILE_ICO}<span class="nm">${label}</span></a></td>
           <td class="num">${humanSize(e.size)}</td>
           <td class="date">${humanDate(e.modified)}</td>
           <td class="act"><button class="copy" data-copy-key="${esc(e.key)}">Copy URL</button></td>
@@ -474,11 +514,59 @@ function route(){
   renderPrefix(!prefix || prefix.endsWith("/") ? prefix : prefix + "/");
 }
 window.addEventListener("popstate", route);
-/* In-app directory navigation stays client-side; file links (download
- * attribute) and external links navigate normally. */
+/* ------------------------------------------------------------------ *
+ *  Text-file preview: fetch the first 512 KB (ranged) into a modal.   *
+ * ------------------------------------------------------------------ */
+const PREVIEW_CAP = 512 * 1024;
+async function openPreview(key, size){
+  const url = `${location.origin}/${encodeKey(key)}`;
+  const overlay = document.createElement("div");
+  overlay.className = "preview-overlay";
+  overlay.innerHTML = `
+    <div class="preview-panel" role="dialog" aria-modal="true" aria-label="File preview">
+      <div class="preview-head">
+        <span class="preview-name"></span>
+        <span class="preview-links">
+          <a class="copy" href="${esc(url)}" target="_blank" rel="noopener">Raw</a>
+          <a class="copy" href="${esc(url)}" download>Download</a>
+          <button class="copy" data-close>Close</button>
+        </span>
+      </div>
+      <pre class="preview-body">Loading…</pre>
+      <div class="preview-note"></div>
+    </div>`;
+  overlay.querySelector(".preview-name").textContent = decodeSafe(key.split("/").pop());
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") close(); };
+  overlay.addEventListener("click", e => { if (e.target === overlay || e.target.hasAttribute("data-close")) close(); });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(overlay);
+  try {
+    const resp = await fetch(url, { headers: { Range: `bytes=0-${PREVIEW_CAP - 1}` } });
+    if (!resp.ok && resp.status !== 206) throw new Error(`HTTP ${resp.status}`);
+    let text = await resp.text();
+    if (text.length > PREVIEW_CAP) text = text.slice(0, PREVIEW_CAP);
+    overlay.querySelector(".preview-body").textContent = text || "(empty file)";
+    if (size > PREVIEW_CAP)
+      overlay.querySelector(".preview-note").textContent =
+        `Showing the first ${humanSize(PREVIEW_CAP)} of ${humanSize(size)} — use Raw or Download for the full file.`;
+  } catch (err) {
+    overlay.querySelector(".preview-body").textContent = `Couldn't load preview — ${err.message}`;
+  }
+}
+
+/* In-app directory navigation and text previews stay client-side; file
+ * links (download attribute), native-viewable files (new tab), and
+ * external links navigate normally. */
 document.addEventListener("click", e => {
   const a = e.target.closest("a");
-  if (!a || a.hasAttribute("download") || a.origin !== location.origin) return;
+  if (!a || a.origin !== location.origin) return;
+  if (a.dataset.viewKey){
+    e.preventDefault();
+    openPreview(a.dataset.viewKey, Number(a.dataset.viewSize) || 0);
+    return;
+  }
+  if (a.hasAttribute("download") || a.target === "_blank") return;
   if (a.pathname === "/" || a.pathname.endsWith("/")) {
     e.preventDefault();
     history.pushState(null, "", a.pathname);
