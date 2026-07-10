@@ -319,7 +319,7 @@ const app = document.getElementById("app");
 
 function crumbsHtml(prefix){
   const parts = prefix.split("/").filter(Boolean);
-  let html = `<a href="#/">sustainable-fsa</a>`;
+  let html = `<a href="/">sustainable-fsa</a>`;
   let acc = "";
   parts.forEach((p, i) => {
     acc += p + "/";
@@ -327,7 +327,7 @@ function crumbsHtml(prefix){
     html += `<span class="sep">/</span>`;
     html += (i === parts.length - 1)
       ? `<span class="here">${label}</span>`
-      : `<a href="#/${esc(encodeKey(acc))}">${label}</a>`;
+      : `<a href="/${esc(encodeKey(acc))}">${label}</a>`;
   });
   return `<nav class="crumbs" aria-label="Location">${html}</nav>`;
 }
@@ -398,7 +398,7 @@ async function renderPrefix(prefix){
         const label = esc(decodeSafe(e.name));
         if (e.type === "dir"){
           return `<tr>
-            <td><a class="entry" href="#/${esc(encodeKey(e.key))}">${FOLDER_ICO}<span class="nm">${label}</span></a></td>
+            <td><a class="entry" href="/${esc(encodeKey(e.key))}">${FOLDER_ICO}<span class="nm">${label}</span></a></td>
             <td class="num">—</td><td class="date"></td>
             <td class="act"><button class="copy" data-copy-key="${esc(e.key)}">Copy URL</button></td>
           </tr>`;
@@ -457,14 +457,34 @@ function wireCopyButtons(){
 }
 
 /* ------------------------------------------------------------------ *
- *  Hash routing: #/  or  #/<encoded prefix ending in "/">             *
+ *  Path routing: /  or  /<encoded prefix ending in "/">               *
+ *  CloudFront rewrites extensionless URLs to this page, so the path   *
+ *  itself is the route. Legacy #/<prefix> links are normalized to     *
+ *  paths on load so old bookmarks and catalog links keep working.     *
  * ------------------------------------------------------------------ */
 function route(){
-  const raw = location.hash.replace(/^#\/?/, "");
+  if (location.hash.length > 1) {
+    const legacy = location.hash.replace(/^#\/?/, "");
+    history.replaceState(null, "", "/" + legacy);
+  } else if (location.hash) {
+    history.replaceState(null, "", location.pathname);
+  }
+  const raw = location.pathname.replace(/^\//, "");
   const prefix = decodeSafe(raw);
   renderPrefix(!prefix || prefix.endsWith("/") ? prefix : prefix + "/");
 }
-window.addEventListener("hashchange", route);
+window.addEventListener("popstate", route);
+/* In-app directory navigation stays client-side; file links (download
+ * attribute) and external links navigate normally. */
+document.addEventListener("click", e => {
+  const a = e.target.closest("a");
+  if (!a || a.hasAttribute("download") || a.origin !== location.origin) return;
+  if (a.pathname === "/" || a.pathname.endsWith("/")) {
+    e.preventDefault();
+    history.pushState(null, "", a.pathname);
+    route();
+  }
+});
 route();
 </script>
 </body>
