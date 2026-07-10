@@ -266,6 +266,25 @@ const PORTAL_FILES = new Set([
   "sustainable-fsa-banner.svg", "MCO_logo.svg",
 ]);
 
+/* A top-level prefix appears in the portal iff a same-named PUBLIC repo
+ * exists in the org — flipping a repo private hides its prefix on the
+ * next page load. Cosmetic layer only: the bucket policy separately
+ * denies anonymous listing inside unlisted prefixes. Fail-open on API
+ * errors (rate limits etc.) so the portal never blanks out. */
+async function publicRepoNames(){
+  try {
+    const cached = JSON.parse(sessionStorage.getItem("sfsa-public-repos") || "null");
+    if (cached && Date.now() - cached.t < 3600e3) return new Set(cached.names);
+    const res = await fetch("https://api.github.com/orgs/sustainable-fsa/repos?per_page=100");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const names = (await res.json()).map(r => r.name);
+    sessionStorage.setItem("sfsa-public-repos", JSON.stringify({ t: Date.now(), names }));
+    return new Set(names);
+  } catch {
+    return null;   // fail-open: caller hides nothing
+  }
+}
+
 /* ------------------------------------------------------------------ *
  *  Key encoding                                                       *
  *  S3 keys here contain literal spaces and literal "%" (Arrow's hive  *
@@ -299,6 +318,8 @@ async function listPrefix(prefix){
     const q = new URLSearchParams({ "list-type": "2", "delimiter": "/", "prefix": prefix });
     if (token) q.set("continuation-token", token);
     const res = await fetch(`${S3}/?${q}`);
+    if (res.status === 403)
+      throw new Error("this folder isn't listable — files here are shared by direct link only");
     if (!res.ok) throw new Error(`S3 listing failed (HTTP ${res.status})`);
     const xml = new DOMParser().parseFromString(await res.text(), "text/xml");
     for (const el of xml.querySelectorAll("CommonPrefixes > Prefix"))
@@ -381,7 +402,12 @@ let currentSort = { by: "name", dir: 1 };
 async function renderPrefix(prefix){
   app.innerHTML = ledeHtml(prefix) + crumbsHtml(prefix) + `<div class="state" style="margin-top:18px">Reading ${esc(decodeSafe(prefix || "the archive"))}…</div>`;
   try {
-    const { dirs, files, truncated } = await listPrefix(prefix);
+    const { dirs: allDirs, files, truncated } = await listPrefix(prefix);
+    let dirs = allDirs;
+    if (prefix === ""){
+      const pub = await publicRepoNames();
+      if (pub) dirs = allDirs.filter(d => pub.has(d.replace(/\/$/, "")));
+    }
     const shownFiles = prefix === "" ? files.filter(f => !PORTAL_FILES.has(f.key)) : files;
     const totalSize = shownFiles.reduce((a, f) => a + f.size, 0);
     const stats = [
